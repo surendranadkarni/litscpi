@@ -2,7 +2,7 @@ import setuptools
 from litscpi.version import Version
 
 setuptools.setup(name='litscpi',
-                 version=Version('0.0.1').number,
+                 version=Version('0.0.2').number,
                  description='Python Package for SCPI',
                  long_description=open('README.md').read().strip(),
                  author='Surendra Nadkarni',
