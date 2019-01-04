@@ -1,4 +1,5 @@
 import socket
+import time
 
 def tranlsate_str_measurement(acc, str_mesurement):
     stripped = str_mesurement.strip()
@@ -23,6 +24,12 @@ class SCPI:
     def enable_remote_control(self):
         command = "SYST:REM\n"
         self.__measurement_sock.send(command)
+        command = 'SENS:FUNC "CURRent"\n'
+        self.__measurement_sock.send(command)
+        command = 'SENS:SWE:POIN 50\n'
+        self.__measurement_sock.send(command)
+        command = 'SENS:SWE:FREQ 1000\n'
+        self.__measurement_sock.send(command)
 
     def enable_local_control(self):
         command = "SYST:LOC\n"
@@ -34,14 +41,34 @@ class SCPI:
     def stop_battery(self):
         self.__measurement_sock.send("BATT:STOP\n")
 
+    def clear_battery_capacity(self):
+        self.__measurement_sock.send("BATT:CAP:CLE\n")
+
     def read_current(self):
+        # dirty way to clear pervious buffer
+        try:
+            _dummy_read = self.__measurement_sock.recv(20000)
+        except socket.timeout:
+            pass
         self.__measurement_sock.send("MEAS:CURR?\n")
-        return float(self.__measurement_sock.recv(100))
+
+        try:
+            current_measurement = float(self.__measurement_sock.recv(100))
+        except socket.timeout:
+            time.sleep(1)
+            current_measurement = float(self.__measurement_sock.recv(100))
+        return current_measurement
 
     def read_current_array(self):
         self.__measurement_sock.send("MEAS:ARR:CURR?\n")
-        current_measurements_str = self.__measurement_sock.recv(20000)
-        splitted_list = current_measurements_str.strip().split(",")
-        current_measurement = reduce(tranlsate_str_measurement, splitted_list, [])
-        return current_measurement
+        time.sleep(0.5)
+        try:
+            current_measurements_str = self.__measurement_sock.recv(40000)
+        except socket.timeout:
+            current_measurement = []
+        else:
+            splitted_list = current_measurements_str.strip().split(",")
+            current_measurement = reduce(tranlsate_str_measurement, splitted_list, [])
+        finally:
+            return current_measurement
 
